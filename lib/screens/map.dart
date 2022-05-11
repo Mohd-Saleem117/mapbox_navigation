@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, avoid_print
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -5,7 +7,8 @@ import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:mapbox_navigation/constants/destinationLocation.dart';
 import 'package:mapbox_navigation/helpers/commons.dart';
 import 'package:mapbox_navigation/helpers/shared_prefs.dart';
-
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../widgets/carousel_card.dart';
 
 class sampleMap extends StatefulWidget {
@@ -16,12 +19,48 @@ class sampleMap extends StatefulWidget {
 }
 
 class _sampleMapState extends State<sampleMap> {
+  // late final dref = FirebaseDatabase.instance.reference();
+  late DatabaseReference dbref;
+  // String databasejson = "";
+
+  showData() {
+    dbref.once().then((event) {
+      final dataSnapshot = event.snapshot;
+      print(dataSnapshot.value.toString());
+    });
+  }
+
+  showOneChild() {
+    dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("busLatitude")
+        .once()
+        .then((event) {
+      final dataSnapshot = event.snapshot;
+      print(dataSnapshot.value.toString());
+    });
+  }
+
   // Mapbox related
   LatLng latlng = getLatLngFromSharedPrefs();
   late CameraPosition _initialCameraPosition;
   late MapboxMapController controller;
   late List<CameraPosition> _kDestinationsList;
   List<Map> carouselData = [];
+
+  List<Map> dLoc = [
+    {
+      'routeName': 'loki',
+      'coordinates': {
+        'latitude': '17.2345',
+        'longitude': '78.22222',
+      }
+    }
+  ];
+  String name = "";
+  String lat = "";
+  String lon = "";
 
   // Carousel related
   int pageIndex = 0;
@@ -30,6 +69,39 @@ class _sampleMapState extends State<sampleMap> {
   @override
   void initState() {
     super.initState();
+    DestinationLocation();
+    // dbref = FirebaseDatabase.instance.reference();
+
+    // dbref
+    //     .child("BUS ROUTES")
+    //     .child("LOCATION")
+    //     .child("busLatitude")
+    //     .onValue
+    //     .listen((event) {
+    //   lat = event.snapshot.value.toString();
+    //   print("Hiiii-----------------" + event.snapshot.value.toString());
+    // });
+    // dbref
+    //     .child("BUS ROUTES")
+    //     .child("LOCATION")
+    //     .child("busLongitude")
+    //     .onValue
+    //     .listen((event) {
+    //   lon = event.snapshot.value.toString();
+    //   print("Hiiiii-----------------" + lon);
+    // });
+
+    // dbref
+    //     .child("BUS ROUTES")
+    //     .child("LOCATION")
+    //     .child("name")
+    //     .onValue
+    //     .listen((event) {
+    //   setState(() {});
+    //   name = event.snapshot.value.toString();
+    //   print("Hiiii--------------------" + name);
+    // });
+
     _initialCameraPosition = CameraPosition(target: latlng, zoom: 15);
 
     // Calculate the distance and time from data in SharedPreferences
@@ -50,9 +122,34 @@ class _sampleMapState extends State<sampleMap> {
         (index) => CameraPosition(
             target: getLatLngFromDestinationData(carouselData[index]['index']),
             zoom: 15));
+
+    // setState(() {
+    //   dLoc = [
+    //     {
+    //       'routeName': name,
+    //       'coordinates': {
+    //         'latitude': lat,
+    //         'longitude': lon,
+    //       }
+    //     }
+    //   ];
+    //   print("===========================" + dLoc[0]['routeName']);
+    // });
+    // addToDB();
   }
 
+  // addToDB() {
+  //   setState(() {
+  //     print("===========================" +
+  //         dLoc[0]['coordinates']['latitude'] +
+  //         "================" +
+  //         name);
+  //     dLoc[0]['routeName'] = name;
+  //   });
+  // }
+
   _addSourceAndLineLayer(int index, bool removeLayer) async {
+    // print("------------------$name-----------------");
     // Can animate camera to focus on the item
     controller.animateCamera(
         CameraUpdate.newCameraPosition(_kDestinationsList[index]));
@@ -107,8 +204,11 @@ class _sampleMapState extends State<sampleMap> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Map'),
-        centerTitle: true,
+        title: Text('Map $name'),
+        actions: [
+          TextButton(onPressed: showData, child: Text("ShowData")),
+          TextButton(onPressed: showOneChild, child: Text("ShowOneChild"))
+        ],
       ),
       body: SafeArea(
           child: Stack(
