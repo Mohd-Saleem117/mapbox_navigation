@@ -5,6 +5,6 @@ import '../screens/map.dart';
 
 LatLng getLatLngFromDestinationData(int index) {
   return LatLng(
-      double.parse(destinationLocation[index]['coordinates']['latitude']),
-      double.parse(destinationLocation[index]['coordinates']['longitude']));
+      double.parse(destinationLocation[index]['latitude']),
+      double.parse(destinationLocation[index]['longitude']));
 }

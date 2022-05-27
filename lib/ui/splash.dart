@@ -8,9 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 // import 'package:lottie/lottie.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
+import 'package:mapbox_navigation/constants/destinationLocation.dart';
 // import 'package:mapbox_navigation/constants/destinationLocation.dart';
 import 'package:mapbox_navigation/helpers/directions_handler.dart';
 import 'package:mapbox_navigation/main.dart';
+import 'package:mapbox_navigation/screens/map.dart';
 
 import '../screens/home_management.dart';
 // import '../screens/map.dart';
@@ -57,14 +59,14 @@ class _SplashState extends State<Splash> {
     // Get and store the directions API response in sharedPreferences
 
     // If we have multiple ruotes
-    // for (int i = 0; i < destinationLocation.length; i++) {
-    //   Map modifiedResponse = await getDirectionsAPIResponse(currentLatLng, i);
-    //   saveDirectionsAPIResponse(i, json.encode(modifiedResponse));
-    // }
+    for (int i = 0; i < destinationLocation.length; i++) {
+      Map modifiedResponse = await getDirectionsAPIResponse(currentLatLng, i);
+      saveDirectionsAPIResponse(i, json.encode(modifiedResponse));
+    }
 
-    // If we have only single route
-    Map modifiedResponse = await getDirectionsAPIResponse(currentLatLng, 0);
-    saveDirectionsAPIResponse(0, json.encode(modifiedResponse));
+    // // If we have only single route
+    // Map modifiedResponse = await getDirectionsAPIResponse(currentLatLng, 0);
+    // saveDirectionsAPIResponse(0, json.encode(modifiedResponse));
 
     Future.delayed(
         const Duration(seconds: 1),

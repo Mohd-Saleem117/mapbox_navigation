@@ -1,5 +1,6 @@
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:mapbox_navigation/main.dart';
+import 'package:mapbox_navigation/screens/map.dart';
 
 import '../constants/destinationLocation.dart';
 import '../requests/mapbox_requests.dart';
@@ -8,9 +9,9 @@ Future<Map> getDirectionsAPIResponse(LatLng currentLatLng, int index) async {
   final response = await getCyclingRouteUsingMapbox(
       currentLatLng,
       LatLng(
-          double.parse(destinationLocation[index]['coordinates']['latitude']),
+          double.parse(destinationLocation[index]['latitude']),
           double.parse(
-              destinationLocation[index]['coordinates']['longitude'])));
+              destinationLocation[index]['longitude'])));
   Map geometry = response['routes'][0]['geometry'];
   num duration = response['routes'][0]['duration'];
   num distance = response['routes'][0]['distance'];

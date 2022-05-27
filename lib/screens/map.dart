@@ -18,9 +18,19 @@ class sampleMap extends StatefulWidget {
   State<sampleMap> createState() => _sampleMapState();
 }
 
+List<Map> destinationLocation = [
+  {
+    'routeName': 'BUS NO. 21',
+    'latitude': '17.42396',
+    'longitude': '78.504317',
+  }
+];
+
 class _sampleMapState extends State<sampleMap> {
-  // late final dref = FirebaseDatabase.instance.reference();
-  late DatabaseReference dbref;
+  String _name = "";
+  String _lat = "";
+  String _lon = "";
+  final dbref = FirebaseDatabase.instance.reference();
   // String databasejson = "";
 
   showData() {
@@ -49,18 +59,15 @@ class _sampleMapState extends State<sampleMap> {
   late List<CameraPosition> _kDestinationsList;
   List<Map> carouselData = [];
 
-  List<Map> dLoc = [
-    {
-      'routeName': 'loki',
-      'coordinates': {
-        'latitude': '17.2345',
-        'longitude': '78.22222',
-      }
-    }
-  ];
-  String name = "";
-  String lat = "";
-  String lon = "";
+  // List<Map> dLoc = [
+  //   {
+  //     'routeName': 'loki',
+  //     'coordinates': {
+  //       'latitude': '17.2345',
+  //       'longitude': '78.22222',
+  //     }
+  //   }
+  // ];
 
   // Carousel related
   int pageIndex = 0;
@@ -69,8 +76,9 @@ class _sampleMapState extends State<sampleMap> {
   @override
   void initState() {
     super.initState();
-    DestinationLocation();
-    // dbref = FirebaseDatabase.instance.reference();
+    _activateListeners();
+
+    // DestinationLocation();
 
     // dbref
     //     .child("BUS ROUTES")
@@ -79,6 +87,7 @@ class _sampleMapState extends State<sampleMap> {
     //     .onValue
     //     .listen((event) {
     //   lat = event.snapshot.value.toString();
+    //   // destinationLocation.update('latitude', lat);
     //   print("Hiiii-----------------" + event.snapshot.value.toString());
     // });
     // dbref
@@ -110,6 +119,12 @@ class _sampleMapState extends State<sampleMap> {
 
     carouselData.add({'index': 0, 'distance': distance, 'duration': duration});
 
+    destinationLocation[0].update('routeName', (value) => _name);
+    destinationLocation[0].update('latitude', (value) => _lat);
+    destinationLocation[0].update('longitude', (value) => _lon);
+    print("Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" +
+        destinationLocation[0]['routeName']);
+
     // Generate the list of carousel widgets
     carouselItems = List<Widget>.generate(
         destinationLocation.length,
@@ -122,31 +137,57 @@ class _sampleMapState extends State<sampleMap> {
         (index) => CameraPosition(
             target: getLatLngFromDestinationData(carouselData[index]['index']),
             zoom: 15));
-
-    // setState(() {
-    //   dLoc = [
-    //     {
-    //       'routeName': name,
-    //       'coordinates': {
-    //         'latitude': lat,
-    //         'longitude': lon,
-    //       }
-    //     }
-    //   ];
-    //   print("===========================" + dLoc[0]['routeName']);
-    // });
-    // addToDB();
   }
 
-  // addToDB() {
-  //   setState(() {
-  //     print("===========================" +
-  //         dLoc[0]['coordinates']['latitude'] +
-  //         "================" +
-  //         name);
-  //     dLoc[0]['routeName'] = name;
-  //   });
-  // }
+  void _activateListeners() {
+    dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("busLatitude")
+        .onValue
+        .listen((event) {
+      String lati = event.snapshot.value.toString();
+      print("Hiiii-----------------" + lati);
+      setState(() {
+        _lat = lati;
+      });
+    });
+
+    dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("busLongitude")
+        .onValue
+        .listen((event) {
+      String longi = event.snapshot.value.toString();
+      print("Hiiiii-----------------" + longi);
+      setState(() {
+        _lon = longi;
+      });
+    });
+
+    dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("name")
+        .onValue
+        .listen((event) {
+      setState(() {});
+      String busName = event.snapshot.value.toString();
+      print("Hiiii--------------------" + busName);
+      setState(() {
+        _name = busName;
+      });
+    });
+
+    // setState(() {
+    //   destinationLocation[0].update('routeName', (value) => _name);
+    //   destinationLocation[0].update('latitude', (value) => _lat);
+    //   destinationLocation[0].update('longitude', (value) => _lon);
+    //   print("Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" +
+    //       destinationLocation[0]['routeName']);
+    // });
+  }
 
   _addSourceAndLineLayer(int index, bool removeLayer) async {
     // print("------------------$name-----------------");
@@ -204,7 +245,7 @@ class _sampleMapState extends State<sampleMap> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Map $name'),
+        title: Text('Map $_name'),
         actions: [
           TextButton(onPressed: showData, child: Text("ShowData")),
           TextButton(onPressed: showOneChild, child: Text("ShowOneChild"))
@@ -239,18 +280,79 @@ class _sampleMapState extends State<sampleMap> {
                         (int index, CarouselPageChangedReason reason) {
                       setState(() {
                         pageIndex = index;
+
+                        // print("12345678910" + _name);
+                        // destinationLocation[0]['routeName'] = _name;
+                        // destinationLocation[0]['latitude'] = _lat;
+                        // destinationLocation[0]['longitude'] = _lon;
                       });
                       _addSourceAndLineLayer(index, true);
                     })),
           ),
         ],
       )),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          controller.animateCamera(
-              CameraUpdate.newCameraPosition(_initialCameraPosition));
-        },
-        child: Icon(Icons.my_location),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned(
+            left: 30,
+            bottom: 10,
+            child: FloatingActionButton(
+              heroTag: 'my_location',
+              onPressed: () {
+                controller.animateCamera(
+                    CameraUpdate.newCameraPosition(_initialCameraPosition));
+              },
+              child: const Icon(
+                Icons.my_location,
+                size: 30,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 10,
+            right: 30,
+            child: FloatingActionButton(
+              heroTag: 'destination_location',
+              onPressed: () {
+                controller.animateCamera(
+                    CameraUpdate.newCameraPosition(_kDestinationsList[0]));
+                // print("-------------" +
+                //     _name +
+                //     "---------------" +
+                //     _lat +
+                //     "------------" +
+                //     _lon);
+                setState(() {
+                  // destinationLocation[0]['routeName'] = _name;
+                  // destinationLocation[0]['latitude'] = _lat;
+                  // destinationLocation[0]['longitude'] = _lon;
+                  // destinationLocation.add({
+                  //   'routeName': _name,
+                  //   'latitude': _lat,
+                  //   'longitude': _lon,
+                  // });
+                  // destinationLocation[0].update('routeName', (value) => _name);
+                  // destinationLocation[0].update('latitude', (value) => _lat);
+                  // destinationLocation[0].update('longitude', (value) => _lon);
+                  // print("Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" +
+                  //     destinationLocation[0]['routeName']);
+                });
+              },
+              child: const Icon(
+                Icons.share_location,
+                size: 30,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
