@@ -1,15 +1,21 @@
-// ignore_for_file: deprecated_member_use, avoid_print
+// ignore_for_file: deprecated_member_use, avoid_print, prefer_typing_uninitialized_variables
+
+import 'dart:convert';
 
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
-import 'package:mapbox_navigation/constants/destinationLocation.dart';
 import 'package:mapbox_navigation/helpers/commons.dart';
 import 'package:mapbox_navigation/helpers/shared_prefs.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../widgets/carousel_card.dart';
+import '../ui/splash.dart';
+import '../main.dart';
 
 class sampleMap extends StatefulWidget {
   const sampleMap({Key? key}) : super(key: key);
@@ -18,21 +24,18 @@ class sampleMap extends StatefulWidget {
   State<sampleMap> createState() => _sampleMapState();
 }
 
-List<Map> destinationLocation = [
-  {
-    'routeName': 'BUS NO. 21',
-    'latitude': '17.42396',
-    'longitude': '78.504317',
-  }
-];
+// Map destinationLocation = {
+//   'routeName': "loki",
+//   'latitude': '17.2345',
+//   'longitude': '78.22222',
+// };
+final user = FirebaseAuth.instance.currentUser;
+final FirebaseAuth _auth = FirebaseAuth.instance;
+final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+final dbref = FirebaseDatabase.instance.reference();
 
 class _sampleMapState extends State<sampleMap> {
-  String _name = "";
-  String _lat = "";
-  String _lon = "";
-  final dbref = FirebaseDatabase.instance.reference();
-  // String databasejson = "";
-
   showData() {
     dbref.once().then((event) {
       final dataSnapshot = event.snapshot;
@@ -56,147 +59,74 @@ class _sampleMapState extends State<sampleMap> {
   LatLng latlng = getLatLngFromSharedPrefs();
   late CameraPosition _initialCameraPosition;
   late MapboxMapController controller;
-  late List<CameraPosition> _kDestinationsList;
-  List<Map> carouselData = [];
-
-  // List<Map> dLoc = [
-  //   {
-  //     'routeName': 'loki',
-  //     'coordinates': {
-  //       'latitude': '17.2345',
-  //       'longitude': '78.22222',
-  //     }
-  //   }
-  // ];
-
-  // Carousel related
-  int pageIndex = 0;
-  late List<Widget> carouselItems;
+  late CameraPosition _kDestinationsList;
+  late Map carouselData;
 
   @override
   void initState() {
     super.initState();
-    _activateListeners();
+    initializeDestlocation();
+  }
 
-    // DestinationLocation();
+  double? getLati;
+  double? getLongi;
 
-    // dbref
-    //     .child("BUS ROUTES")
-    //     .child("LOCATION")
-    //     .child("busLatitude")
-    //     .onValue
-    //     .listen((event) {
-    //   lat = event.snapshot.value.toString();
-    //   // destinationLocation.update('latitude', lat);
-    //   print("Hiiii-----------------" + event.snapshot.value.toString());
-    // });
-    // dbref
-    //     .child("BUS ROUTES")
-    //     .child("LOCATION")
-    //     .child("busLongitude")
-    //     .onValue
-    //     .listen((event) {
-    //   lon = event.snapshot.value.toString();
-    //   print("Hiiiii-----------------" + lon);
-    // });
+  void initializeDestlocation() async {
+    final dbref = FirebaseDatabase.instance.reference();
 
-    // dbref
-    //     .child("BUS ROUTES")
-    //     .child("LOCATION")
-    //     .child("name")
-    //     .onValue
-    //     .listen((event) {
-    //   setState(() {});
-    //   name = event.snapshot.value.toString();
-    //   print("Hiiii--------------------" + name);
-    // });
+    // Get the firebase destination location
+    await dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("busLatitude")
+        .once()
+        .then((event) {
+      setState(() {
+        final dataSnapshot = event.snapshot;
+        print(dataSnapshot.value.toString());
+        getLati = double.parse(dataSnapshot.value.toString());
+      });
+    });
+    await dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("busLongitude")
+        .once()
+        .then((event) {
+      setState(() {
+        final dataSnapshot = event.snapshot;
+        print(dataSnapshot.value.toString());
+        getLongi = double.parse(dataSnapshot.value.toString());
+      });
+    });
+    LatLng desLatLng = LatLng(getLati!, getLongi!);
+
+    print("$getLati---$getLongi");
+
+    LatLng getLatLngFromDestinationData() {
+      return desLatLng;
+    }
 
     _initialCameraPosition = CameraPosition(target: latlng, zoom: 15);
 
     // Calculate the distance and time from data in SharedPreferences
-    num distance = getDistanceFromSharedPrefs(0) / 1000;
-    num duration = getDurationFromSharedPrefs(0) / 60;
+    num distance = getDistanceFromSharedPrefs() / 1000;
+    num duration = getDurationFromSharedPrefs() / 60;
 
-    carouselData.add({'index': 0, 'distance': distance, 'duration': duration});
+    carouselData = {'distance': distance, 'duration': duration};
 
-    destinationLocation[0].update('routeName', (value) => _name);
-    destinationLocation[0].update('latitude', (value) => _lat);
-    destinationLocation[0].update('longitude', (value) => _lon);
-    print("Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" +
-        destinationLocation[0]['routeName']);
-
-    // Generate the list of carousel widgets
-    carouselItems = List<Widget>.generate(
-        destinationLocation.length,
-        (index) => carouselCard(carouselData[index]['index'],
-            carouselData[index]['distance'], carouselData[index]['duration']));
-
-    // initialize map symbols in the same order as carousel widgets
-    _kDestinationsList = List<CameraPosition>.generate(
-        destinationLocation.length,
-        (index) => CameraPosition(
-            target: getLatLngFromDestinationData(carouselData[index]['index']),
-            zoom: 15));
+    _kDestinationsList =
+        CameraPosition(target: getLatLngFromDestinationData(), zoom: 15);
   }
 
-  void _activateListeners() {
-    dbref
-        .child("BUS ROUTES")
-        .child("LOCATION")
-        .child("busLatitude")
-        .onValue
-        .listen((event) {
-      String lati = event.snapshot.value.toString();
-      print("Hiiii-----------------" + lati);
-      setState(() {
-        _lat = lati;
-      });
-    });
-
-    dbref
-        .child("BUS ROUTES")
-        .child("LOCATION")
-        .child("busLongitude")
-        .onValue
-        .listen((event) {
-      String longi = event.snapshot.value.toString();
-      print("Hiiiii-----------------" + longi);
-      setState(() {
-        _lon = longi;
-      });
-    });
-
-    dbref
-        .child("BUS ROUTES")
-        .child("LOCATION")
-        .child("name")
-        .onValue
-        .listen((event) {
-      setState(() {});
-      String busName = event.snapshot.value.toString();
-      print("Hiiii--------------------" + busName);
-      setState(() {
-        _name = busName;
-      });
-    });
-
-    // setState(() {
-    //   destinationLocation[0].update('routeName', (value) => _name);
-    //   destinationLocation[0].update('latitude', (value) => _lat);
-    //   destinationLocation[0].update('longitude', (value) => _lon);
-    //   print("Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" +
-    //       destinationLocation[0]['routeName']);
-    // });
-  }
-
-  _addSourceAndLineLayer(int index, bool removeLayer) async {
+  _addSourceAndLineLayer(bool removeLayer) async {
     // print("------------------$name-----------------");
     // Can animate camera to focus on the item
-    controller.animateCamera(
-        CameraUpdate.newCameraPosition(_kDestinationsList[index]));
+    controller
+        .animateCamera(CameraUpdate.newCameraPosition(_kDestinationsList));
 
     // Add a polyLine between source and destination
-    Map geometry = getGeometryFromSharedPrefs(carouselData[index]['index']);
+    Map geometry = getGeometryFromSharedPrefs();
     final _fills = {
       "type": "FeatureCollection",
       "features": [
@@ -230,67 +160,82 @@ class _sampleMapState extends State<sampleMap> {
   }
 
   _onStyleLoadedCallback() async {
-    for (CameraPosition _kDestination in _kDestinationsList) {
-      await controller.addSymbol(SymbolOptions(
-        geometry: _kDestination.target,
-        iconSize: 0.2,
-        iconImage: "assets/icon/busIcon.png",
-        // iconColor: "Colors.amber",
-      ));
-    }
-    _addSourceAndLineLayer(0, false);
+    await controller.addSymbol(SymbolOptions(
+      geometry: _kDestinationsList.target,
+      iconSize: 0.2,
+      iconImage: "assets/icon/busIcon.png",
+      // iconColor: "Colors.amber",
+    ));
+
+    _addSourceAndLineLayer(false);
   }
+
+  final dbReference = FirebaseDatabase.instance
+      .reference()
+      .child('BUS ROUTES')
+      .child("LOCATION");
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Map $_name'),
-        actions: [
-          TextButton(onPressed: showData, child: Text("ShowData")),
-          TextButton(onPressed: showOneChild, child: Text("ShowOneChild"))
-        ],
+        title: Text('Map'),
+        centerTitle: true,
+      ),
+      endDrawer: Drawer(
+        child: Column(
+          children: [
+            SizedBox(height: 40),
+            if (user!.email! == "mskings117@gmail.com") ...[
+              Text("You signed in as Incharger",
+                  style: TextStyle(
+                    fontSize: 16,
+                  )),
+            ] else ...[
+              Text("You signed in as Student",
+                  style: TextStyle(
+                    fontSize: 16,
+                  )),
+            ],
+            SizedBox(height: 8),
+            Text(user!.email!,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 20),
+            ElevatedButton.icon(
+                onPressed: () => FirebaseAuth.instance.signOut(),
+                icon: Icon(
+                  Icons.arrow_back,
+                  size: 32,
+                ),
+                label: Text("Sign Out", style: TextStyle(fontSize: 20)))
+          ],
+        ),
       ),
       body: SafeArea(
-          child: Stack(
-        children: [
-          SizedBox(
-            height: MediaQuery.of(context).size.height,
-            child: MapboxMap(
-              accessToken: dotenv.env['MAPBOX_ACCESS_TOKEN'],
-              initialCameraPosition: _initialCameraPosition,
-              onMapCreated: _onMapCreated,
-              onStyleLoadedCallback: _onStyleLoadedCallback,
-              myLocationEnabled: true,
-              myLocationTrackingMode: MyLocationTrackingMode.TrackingGPS,
-              minMaxZoomPreference: const MinMaxZoomPreference(14, 18),
+        child: Stack(
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: MapboxMap(
+                accessToken:
+                    'pk.eyJ1IjoibW9oZHNhbGVlbSIsImEiOiJjbDRtZHp2bmQwY2xvM2JxdXZheWRyOHJpIn0.7BzUfwdDr6UKxL-aJs2gKw',
+                initialCameraPosition: _initialCameraPosition,
+                onMapCreated: _onMapCreated,
+                onStyleLoadedCallback: _onStyleLoadedCallback,
+                myLocationEnabled: true,
+                myLocationTrackingMode: MyLocationTrackingMode.TrackingGPS,
+                minMaxZoomPreference: const MinMaxZoomPreference(14, 18),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 10.0),
-            child: CarouselSlider(
-                items: carouselItems,
-                options: CarouselOptions(
-                    height: 50,
-                    viewportFraction: 0.6,
-                    initialPage: 0,
-                    enableInfiniteScroll: false,
-                    // scrollDirection: Axis.horizontal,
-                    onPageChanged:
-                        (int index, CarouselPageChangedReason reason) {
-                      setState(() {
-                        pageIndex = index;
-
-                        // print("12345678910" + _name);
-                        // destinationLocation[0]['routeName'] = _name;
-                        // destinationLocation[0]['latitude'] = _lat;
-                        // destinationLocation[0]['longitude'] = _lon;
-                      });
-                      _addSourceAndLineLayer(index, true);
-                    })),
-          ),
-        ],
-      )),
+            // snapshot.value['name']
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: carouselCard(
+                  context, carouselData['distance'], carouselData['duration']),
+            ),
+          ],
+        ),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Stack(
         fit: StackFit.expand,
@@ -300,6 +245,7 @@ class _sampleMapState extends State<sampleMap> {
             bottom: 10,
             child: FloatingActionButton(
               heroTag: 'my_location',
+              tooltip: 'My location',
               onPressed: () {
                 controller.animateCamera(
                     CameraUpdate.newCameraPosition(_initialCameraPosition));
@@ -317,31 +263,12 @@ class _sampleMapState extends State<sampleMap> {
             bottom: 10,
             right: 30,
             child: FloatingActionButton(
+              tooltip: 'Bus location',
               heroTag: 'destination_location',
               onPressed: () {
                 controller.animateCamera(
-                    CameraUpdate.newCameraPosition(_kDestinationsList[0]));
-                // print("-------------" +
-                //     _name +
-                //     "---------------" +
-                //     _lat +
-                //     "------------" +
-                //     _lon);
-                setState(() {
-                  // destinationLocation[0]['routeName'] = _name;
-                  // destinationLocation[0]['latitude'] = _lat;
-                  // destinationLocation[0]['longitude'] = _lon;
-                  // destinationLocation.add({
-                  //   'routeName': _name,
-                  //   'latitude': _lat,
-                  //   'longitude': _lon,
-                  // });
-                  // destinationLocation[0].update('routeName', (value) => _name);
-                  // destinationLocation[0].update('latitude', (value) => _lat);
-                  // destinationLocation[0].update('longitude', (value) => _lon);
-                  // print("Hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" +
-                  //     destinationLocation[0]['routeName']);
-                });
+                    CameraUpdate.newCameraPosition(_kDestinationsList));
+                setState(() {});
               },
               child: const Icon(
                 Icons.share_location,

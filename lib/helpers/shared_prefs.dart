@@ -8,23 +8,23 @@ LatLng getLatLngFromSharedPrefs() {
       sharedPreferences.getDouble('longitude')!);
 }
 
-Map getDecodedResponseFromSharedPrefs(int index) {
-  String key = 'destinationLocation--$index';
+Map getDecodedResponseFromSharedPrefs() {
+  String key = 'destinationLocation--';
   Map response = json.decode(sharedPreferences.getString(key)!);
   return response;
 }
 
-num getDistanceFromSharedPrefs(int index) {
-  num distance = getDecodedResponseFromSharedPrefs(index)['distance'];
+num getDistanceFromSharedPrefs() {
+  num distance = getDecodedResponseFromSharedPrefs()['distance'];
   return distance;
 }
 
-num getDurationFromSharedPrefs(int index) {
-  num duration = getDecodedResponseFromSharedPrefs(index)['duration'];
+num getDurationFromSharedPrefs() {
+  num duration = getDecodedResponseFromSharedPrefs()['duration'];
   return duration;
 }
 
-Map getGeometryFromSharedPrefs(int index) {
-  Map geometry = getDecodedResponseFromSharedPrefs(index)['geometry'];
+Map getGeometryFromSharedPrefs() {
+  Map geometry = getDecodedResponseFromSharedPrefs()['geometry'];
   return geometry;
 }

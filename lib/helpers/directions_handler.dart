@@ -1,18 +1,16 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 import 'package:mapbox_navigation/main.dart';
 import 'package:mapbox_navigation/screens/map.dart';
 
-import '../constants/destinationLocation.dart';
+
 import '../requests/mapbox_requests.dart';
 
-Future<Map> getDirectionsAPIResponse(LatLng currentLatLng, int index) async {
-  final response = await getCyclingRouteUsingMapbox(
-      currentLatLng,
-      LatLng(
-          double.parse(destinationLocation[index]['latitude']),
-          double.parse(
-              destinationLocation[index]['longitude'])));
-  Map geometry = response['routes'][0]['geometry'];
+Future<Map> getDirectionsAPIResponse(
+    LatLng currentLatLng, LatLng destinationLatLng) async {
+  final response =
+      await getCyclingRouteUsingMapbox(currentLatLng, destinationLatLng);
+  Map geometry = response['routes'][0]['geometry'] as Map;
   num duration = response['routes'][0]['duration'];
   num distance = response['routes'][0]['distance'];
   // print(
@@ -29,6 +27,6 @@ Future<Map> getDirectionsAPIResponse(LatLng currentLatLng, int index) async {
   return modifiedResponse;
 }
 
-void saveDirectionsAPIResponse(int index, String response) {
-  sharedPreferences.setString('destinationLocation--$index', response);
+void saveDirectionsAPIResponse(String response) {
+  sharedPreferences.setString('destinationLocation--', response);
 }

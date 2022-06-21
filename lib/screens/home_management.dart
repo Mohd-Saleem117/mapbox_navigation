@@ -10,7 +10,7 @@ class HomeManagement extends StatefulWidget {
 }
 
 class _HomeManagementState extends State<HomeManagement> {
-  final List<Widget> _pages = [const sampleMap(), const chatBox()];
+  final List<Widget> _pages = [const sampleMap(), const ChatBox()];
   int _index = 0;
 
   @override
@@ -25,11 +25,10 @@ class _HomeManagementState extends State<HomeManagement> {
         },
         currentIndex: _index,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Maps'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat Box'),
         ],
       ),
     );
-    // return const RestaurantsMap();
   }
 }

@@ -1,18 +1,21 @@
 // import 'dart:html';
 
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: prefer_const_constructors, deprecated_member_use
 
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:location/location.dart';
 // import 'package:lottie/lottie.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
-import 'package:mapbox_navigation/constants/destinationLocation.dart';
 // import 'package:mapbox_navigation/constants/destinationLocation.dart';
 import 'package:mapbox_navigation/helpers/directions_handler.dart';
 import 'package:mapbox_navigation/main.dart';
+import 'package:mapbox_navigation/mainPage.dart';
 import 'package:mapbox_navigation/screens/map.dart';
+import '../authentication/login.dart';
 
 import '../screens/home_management.dart';
 // import '../screens/map.dart';
@@ -30,6 +33,9 @@ class _SplashState extends State<Splash> {
     super.initState();
     initializeLocationAndSave();
   }
+
+  double? getLati;
+  double? getLongi;
 
   void initializeLocationAndSave() async {
     // Ensure all permissions are collected for Locations
@@ -58,22 +64,48 @@ class _SplashState extends State<Splash> {
 
     // Get and store the directions API response in sharedPreferences
 
-    // If we have multiple ruotes
-    for (int i = 0; i < destinationLocation.length; i++) {
-      Map modifiedResponse = await getDirectionsAPIResponse(currentLatLng, i);
-      saveDirectionsAPIResponse(i, json.encode(modifiedResponse));
-    }
+    // If we have multiple routes
+    // for (int i = 0; i < destinationLocation.length; i++) {
+    //   Map modifiedResponse = await getDirectionsAPIResponse(currentLatLng, i);
+    //   saveDirectionsAPIResponse(i, json.encode(modifiedResponse));
+    // }
+    final dbref = FirebaseDatabase.instance.reference();
 
+    // Get the firebase destination location
+    await dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("busLatitude")
+        .once()
+        .then((event) {
+      setState(() {
+        final dataSnapshot = event.snapshot;
+        print(dataSnapshot.value.toString());
+        getLati = double.parse(dataSnapshot.value.toString());
+      });
+    });
+    await dbref
+        .child("BUS ROUTES")
+        .child("LOCATION")
+        .child("busLongitude")
+        .once()
+        .then((event) {
+      setState(() {
+        final dataSnapshot = event.snapshot;
+        print(dataSnapshot.value.toString());
+        getLongi = double.parse(dataSnapshot.value.toString());
+      });
+    });
+    LatLng desLatLng = LatLng(getLati!, getLongi!);
     // // If we have only single route
-    // Map modifiedResponse = await getDirectionsAPIResponse(currentLatLng, 0);
-    // saveDirectionsAPIResponse(0, json.encode(modifiedResponse));
+    Map modifiedResponse =
+        await getDirectionsAPIResponse(currentLatLng, desLatLng);
+    print("$getLati--" + "--$getLongi");
 
-    Future.delayed(
-        const Duration(seconds: 1),
-        () => Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => HomeManagement()),
-            (route) => false));
+    saveDirectionsAPIResponse(json.encode(modifiedResponse));
+
+    Navigator.pushAndRemoveUntil(context,
+        MaterialPageRoute(builder: (context) => MainPage()), (route) => false);
   }
 
   @override

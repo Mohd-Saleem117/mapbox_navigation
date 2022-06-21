@@ -1,10 +1,14 @@
-import 'package:mapbox_gl/mapbox_gl.dart';
+// // ignore_for_file: deprecated_member_use
 
-import '../constants/destinationLocation.dart';
-import '../screens/map.dart';
+// import 'package:firebase_database/firebase_database.dart';
+// import 'package:firebase_database/ui/firebase_animated_list.dart';
+// import 'package:mapbox_gl/mapbox_gl.dart';
 
-LatLng getLatLngFromDestinationData(int index) {
-  return LatLng(
-      double.parse(destinationLocation[index]['latitude']),
-      double.parse(destinationLocation[index]['longitude']));
-}
+// import '../constants/destinationLocation.dart';
+// import '../screens/map.dart';
+
+// final dbref = FirebaseDatabase.instance.reference();
+
+// LatLng getLatLngFromDestinationData() {
+//   return LatLng(double.parse(), double.parse());
+// }
